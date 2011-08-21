@@ -21,16 +21,14 @@ module Chatterbox
     end
 
     def run
-      #TODO: use select to loop through sockets with data on them.
-      #If the socket with data is the server_socket, then a new client
-      #is connecting to us
-      #Otherwise, it is a message from someone
-      #Send notice to all other connected sockets
       loop do
         io, write, error = IO.select(@sockets, nil, nil, 10)
-        puts "got some stuff from SELECT"
-        next if io.nil?
-        #check IO for new stuff
+        if io.nil?
+          #Do some timeout stuff? or just let them idle?
+          next
+        end
+
+        #check each socket for new stuff
         io.each do |sock|
           # If there is new stuff on the server socket, then someone new is trying to connect.
           if sock == @server_socket
@@ -41,6 +39,7 @@ module Chatterbox
             @sockets << new_sock
             @names[new_sock] = "masked_avenger_#{@default_name_index}"
             @default_name_index = @default_name_index + 1
+            write_to_all_except(new_sock, "#{@names[new_sock]} connected from #{new_address}.")
           # Someone is posting a message to the chat server
           else
             msg, address = sock.recvfrom(@msg_length)
@@ -52,6 +51,7 @@ module Chatterbox
               @names.delete sock
             elsif msg =~ /\\name[\s+](.*)/
               # TODO: get the name change
+              new_name = $1
               old_name = @names[sock]
               @names[sock] = new_name
               write_to_all_except(sock, "#{old_name} changed their name to #{new_name}.")
