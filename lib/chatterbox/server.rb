@@ -2,7 +2,7 @@ require 'socket'
 
 module Chatterbox
   class Server
-    @@default_options = { :port => 3000,
+    @@default_options = { :port => 13000,
                           :address => "127.0.0.1",
                           :msg_length => 10000 }
 
@@ -28,11 +28,14 @@ module Chatterbox
       #Send notice to all other connected sockets
       loop do
         io, write, error = IO.select(@sockets, nil, nil, 10)
+        puts "got some stuff from SELECT"
+        next if io.nil?
         #check IO for new stuff
         io.each do |sock|
           # If there is new stuff on the server socket, then someone new is trying to connect.
           if sock == @server_socket
-            new_sock = @server_socket.accept
+            new_sock, new_address = @server_socket.accept
+            puts "GOT A NEW SOCKET CONNECTION! #{new_sock}"
             #TODO: get hostname from this socket, and broadcast it to all sockets?
             #TODO: broadcast its message? or wait until next time?
             @sockets << new_sock
@@ -41,6 +44,7 @@ module Chatterbox
           # Someone is posting a message to the chat server
           else
             msg, address = sock.recvfrom(@msg_length)
+            puts "msg is #{msg}"
             if msg =~ /\\quit|\\exit/i
               write_to_all_except(sock, "#{@names[sock]} has left the chat.")
               sock.close
@@ -57,12 +61,13 @@ module Chatterbox
           end
         end
       end
+    end
 
-      def write_to_all_except(sock, message)
-        @sockets.each do |s|
-          s.puts(message) unless sock == s
-        end
+    def write_to_all_except(sock, message)
+      @sockets.reject {|s| s == sock or s == @server_socket }.each do |s|
+        s.puts(message)
       end
     end
+
   end
 end
