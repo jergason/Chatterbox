@@ -2,7 +2,7 @@
 *A Simple Chat Server in Ruby*
 
 Chatterbox is a dirt-simple and very naive chat server in Ruby.
-It uses IO.select instead of threads, which means it is *event driven*
+It uses IO.select instead of threads, which means it is *event-driven*
 and *sexy*. It runs in a single thread, but can still serve lots of
 concurrent uses fairly quickly.
 
